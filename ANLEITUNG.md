@@ -1,10 +1,10 @@
-# Gäste aus drei Beds24-Kalendern in UniFi Access
+# Gäste aus Beds24-Kalendern in UniFi Access
 
-Home Assistant gleicht drei Kalender mit der lokalen UniFi-Access-Konsole ab. Jeder Kalender bedient eine Türgruppe. Aus jedem bestätigten Termin mit PIN wird ein Besucher. Geänderte Termine ändern denselben Besucher. Gelöschte, nicht mehr bestätigte und beendete Termine löschen ihn. Ein Termin mit `Privat` wird nur angelegt, wenn auf `PIN` ein Wert folgt.
+Home Assistant gleicht beliebig viele Kalender mit der lokalen UniFi-Access-Konsole ab. Jeder Kalender bedient eine Türgruppe. Aus jedem bestätigten Termin mit PIN wird ein Besucher. Geänderte Termine ändern denselben Besucher. Gelöschte, nicht mehr bestätigte und beendete Termine löschen ihn. Ein Termin mit `Privat` wird nur angelegt, wenn auf `PIN` ein Wert folgt.
 
 Der Besucher und die PIN liegen danach in UniFi Access und werden an den Tür-Hub übertragen. Die Prüfung an der Tür läuft lokal. Eine bereits übertragene PIN bleibt gültig, wenn Internet oder Home Assistant ausfallen. Neu anlegen, ändern und löschen braucht den nächsten erfolgreichen Abgleich.
 
-Die mitgelieferte Home-Assistant-Integration UniFi Access steuert Türen, Sperre und Evakuierung. Besucher legt dieses Skript über die Access-API auf Port 12445 an.
+Die mitgelieferte Home-Assistant-Integration UniFi Access steuert Türen, Sperre und Evakuierung. Besucher legt diese Integration über die Access-API auf Port 12445 an.
 
 ## Ablauf
 
@@ -26,11 +26,11 @@ Beim Beispieltermin ist das:
 ha-cal:calendar.gaeste_eins:20270628150000-b89104524@beds24.com
 ```
 
-Gelöscht werden nur Besucher mit dem Präfix des jeweiligen Kalenders. Manuell angelegte Besucher bleiben unverändert. Ein Termin aus Kalender 1 kann keinen Besucher von Kalender 2 entfernen.
+Gelöscht werden nur Besucher mit dem Präfix des jeweiligen Kalenders. Manuell angelegte Besucher bleiben unverändert. Ein Termin aus einem Kalender entfernt keine Besucher eines anderen Kalenders.
 
 ## Terminformat
 
-Schlüsselwörter und Standardzeiten stehen am Anfang von `pyscript/unifi_guest_sync.py`:
+Schlüsselwörter und Standardzeiten stehen in `custom_components/unifi_guest_sync/const.py`:
 
 ```python
 DEFAULT_ARRIVAL_TIME = "15:00"
@@ -76,11 +76,11 @@ DTEND;TZID=Europe/Rome:20261202T110000
 
 `1 persone` und `(via …)` gehören nicht zum Namen. Fehlt bei einem Termin ohne `Privat` einmalig die PIN oder der Name, bleibt ein schon angelegter Besucher bestehen. Wechselt der Status weg von `Confirmed`, wird er gelöscht. Ist das Zugangsende erreicht, wird der Besucher in Access gelöscht und der Termin nicht erneut angelegt.
 
-Die PIN muss zur Länge in Access passen. Im Beispiel sind das 4 Ziffern. Dieselbe PIN darf zeitgleich nur einem Benutzer oder Besucher gehören, auch über die drei Kalender hinweg.
+Die PIN muss zur Länge in Access passen. Im Beispiel sind das 4 Ziffern. Dieselbe PIN darf zeitgleich nur einem Benutzer oder Besucher gehören, auch über alle Kalender hinweg.
 
 ## UniFi Access vorbereiten
 
-1. In Access drei Türgruppen anlegen, eine pro Kalender.
+1. In Access eine Türgruppe pro Kalender anlegen.
 2. Unter **Einstellungen → Allgemein → API-Token** einen Token mit `view:visitor` und `edit:visitor` erzeugen.
 3. Die PIN-Länge so einstellen, wie sie in den Kalendern steht.
 4. Port 12445 im LAN erreichbar lassen. Home Assistant muss die Konsole direkt erreichen. Den Port nicht ins Internet stellen.
@@ -96,50 +96,23 @@ curl --insecure --silent \
 
 Host und Token durch die eigenen Werte ersetzen. In der Antwort die `id` der jeweiligen Gruppe notieren.
 
-## Dateien nach Home Assistant kopieren
+## Installation über HACS
 
-Pyscript zuerst über HACS installieren: [custom-components/pyscript](https://github.com/custom-components/pyscript). Danach Home Assistant neu starten.
+Das Repository ist eine private HACS-Integration. In HACS einen GitHub-Token hinterlegen, der dieses Repository lesen darf. Danach unter **Benutzerdefinierte Repositories** die Repository-URL eintragen und die Kategorie **Integration** wählen. HACS installiert die Komponente nach `/config/custom_components/unifi_guest_sync`. Home Assistant neu starten.
 
-| Datei in diesem Projekt | Ziel auf dem Home-Assistant-Rechner |
-| --- | --- |
-| `pyscript/unifi_guest_sync.py` | `/config/pyscript/unifi_guest_sync.py` |
-| `homeassistant/pyscript.yaml` | `/config/pyscript.yaml` |
+Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** **UniFi Access Gäste** einrichten:
 
-In `/config/configuration.yaml` diese Zeile ergänzen:
+- Host: IP oder Hostname der Access-Konsole, ohne `https://` und ohne Port
+- API-Token aus Access
+- Horizont in Tagen, Standard 120
 
-```yaml
-pyscript: !include pyscript.yaml
-```
+Im nächsten Schritt jedes Paar aus Kalender und Türgruppen-ID eintragen. Den Haken **Weiteren Kalender hinzufügen** erst beim letzten Paar entfernen. Unter **Konfigurieren** lassen sich später weitere Kalender hinzufügen, Türgruppen ändern und Kalender entfernen. Ein entfernter Kalender verliert seine Besucher beim nächsten Abgleich. Der letzte Kalender bleibt erhalten. Ein leeres Token-Feld behält den gespeicherten Token.
 
-In `/config/secrets.yaml` den Token eintragen. Die Beispieldatei `homeassistant/secrets.yaml.example` zeigt den Schlüsselnamen:
-
-```yaml
-unifi_access_token: "der-token-aus-access"
-```
-
-In `/config/pyscript.yaml` danach vier Werte setzen:
-
-- `host`: IP oder Hostname der Access-Konsole, ohne `https://` und ohne Port
-- drei `entity`-Namen der Kalender, wie sie unter **Entwicklerwerkzeuge → Zustände** stehen
-- drei `door_group_id`-Werte aus der Türgruppen-Abfrage
-
-Die Reihenfolge der Liste ist die Zuordnung. Der erste Kalender bedient die erste Türgruppe, der zweite die zweite, der dritte die dritte.
-
-```yaml
-calendars:
-  - entity: calendar.gaeste_eins
-    door_group_id: "UUID-TUERGRUPPE-1"
-  - entity: calendar.gaeste_zwei
-    door_group_id: "UUID-TUERGRUPPE-2"
-  - entity: calendar.gaeste_drei
-    door_group_id: "UUID-TUERGRUPPE-3"
-```
-
-Home Assistant danach erneut neu starten.
+Der Abgleich startet nach dem Einrichten, wiederholt sich alle fünf Minuten und lässt sich mit dem Dienst `unifi_guest_sync.sync` sofort ausführen.
 
 ## Ersteinrichtung prüfen
 
-Unter **Entwicklerwerkzeuge → Aktionen** den Dienst `pyscript.unifi_guest_sync` ausführen.
+Unter **Entwicklerwerkzeuge → Aktionen** den Dienst `unifi_guest_sync.sync` ausführen.
 
 Für einen bestätigten Termin ohne `Arrivo` und `Partenza` muss in Access der Besucher mit PIN und nur der Türgruppe seines Kalenders stehen. Der Zugang läuft von 15:00 am Anreisetag bis 11:00 am Abreisetag.
 
@@ -152,12 +125,32 @@ Danach nacheinander prüfen:
 5. Den Termin löschen, den Status von `Confirmed` wegändern, oder das Zugangsende abwarten lassen. Der Besucher verschwindet.
 6. Dieselbe PIN an der Tür eingeben, während Home Assistant gestoppt und die Internetverbindung getrennt ist. Der Zutritt muss funktionieren, solange der Zugang noch nicht beendet ist.
 
-Das Protokoll steht unter **Einstellungen → System → Protokolle**, Quelle Pyscript. `/config/unifi_guest_sync_state.json` merkt sich die zuletzt gesetzte PIN, damit eine Änderung erkannt wird. Die Datei enthält PINs und bleibt auf dem Home-Assistant-Rechner.
+Das Protokoll steht unter **Einstellungen → System → Protokolle**, Logger `custom_components.unifi_guest_sync`. Der Abgleich merkt sich die zuletzt gesetzte PIN in `.storage/unifi_guest_sync`. Die Datei enthält PINs und bleibt auf dem Home-Assistant-Rechner.
+
+## QR-Code herunterladen
+
+Die Aktion `unifi_guest_sync.download_qr_code` ordnet dem Besucher bei Bedarf einen QR-Code zu, speichert das Bild und gibt den Pfad zurück. Dieselbe Aktion gilt für **Entwicklerwerkzeuge → Aktionen** und für Automatisierungen. Der Leser muss QR-Codes als Zugangsmethode erlauben. Dafür ist UniFi Access 3.3.10 oder neuer nötig.
+
+Die Aktion sucht den Besucher entweder über `visitor_id` oder über `calendar_entity` und `event_uid`. Die UID ist die des Kalendertermins, zum Beispiel `20261126150000-b94003821@beds24.com`.
+
+```yaml
+actions:
+  - action: unifi_guest_sync.download_qr_code
+    data:
+      calendar_entity: calendar.gaeste_eins
+      event_uid: "20261126150000-b94003821@beds24.com"
+    response_variable: qr
+  - action: notify.benachrichtigung
+    data:
+      message: "QR-Code: {{ qr.path }}"
+```
+
+`qr.path` zeigt auf `/config/unifi_guest_qr/<besucher-id>.png`. Mit `publish: true` liegt dieselbe Datei zusätzlich unter `/config/www/unifi_guest_qr/` und ist im Browser über `qr.local_url` erreichbar, zum Beispiel `/local/unifi_guest_qr/<besucher-id>.png`. Diese Adresse verlangt kein Login. Wird der Besucher gelöscht, werden die Bilddateien mit entfernt.
 
 ## Was bei einem Ausfall gilt
 
 Der Leser spricht nach der Übertragung nicht mit Home Assistant und nicht mit dem Internet. Solange der Hub Strom hat und die PIN schon synchronisiert wurde, geht die Tür auf.
 
-Ein Termin, der während eines Ausfalls neu entsteht, sich ändert oder gelöscht wird, zieht erst beim nächsten erfolgreichen Abgleich nach. Dafür müssen Home Assistant, der Kalender und die Access-Konsole erreichbar sein. Ein Widerruf, der in den Ausfall fällt, gilt erst nach diesem Lauf. Der Horizont muss den am weitesten voraus liegenden Aufenthalt einschließen. Liegt ein Termin dahinter, wird er nicht angelegt.
+Ein Termin, der während eines Ausfalls neu entsteht, sich ändert oder gelöscht wird, zieht erst beim nächsten erfolgreichen Abgleich nach. Dafür müssen Home Assistant, der Kalender und die Access-Konsole erreichbar sein. Ist die Kalender-Entität nicht verfügbar, bricht der Abgleich für diesen Kalender ab und löscht keine Besucher. Eine erfolgreich geladene, aber leere Kalenderdatei gilt dagegen als echte Löschung. Ein Widerruf, der in den Ausfall fällt, gilt erst nach dem nächsten erfolgreichen Lauf. Der Horizont muss den am weitesten voraus liegenden Aufenthalt einschließen. Liegt ein Termin dahinter, wird er nicht angelegt.
 
 Weist Access die PIN zurück, stimmt die PIN-Länge nicht, oder die PIN ist bereits vergeben. Die API-Dokumentation beschreibt die PIN als zuvor erzeugten Code. `PUT /visitors/{id}/pin_codes` übernimmt die Ziffern aus dem Kalender, sobald Länge und Eindeutigkeit passen. Der erste Testbesucher zeigt, ob die Console-Version das tut.

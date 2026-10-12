@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "UniFi Access Gäste",
+        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Die Kalender folgen im nächsten Schritt.",
+        "data": {
+          "host": "Konsole (Host)",
+          "token": "API-Token",
+          "horizon_days": "Horizont in Tagen"
+        }
+      },
+      "calendar": {
+        "title": "Kalender und Türgruppe",
+        "description": "Bereits hinzugefügt:\n{calendars}\n\nDen Haken entfernen, um die Einrichtung abzuschließen.",
+        "data": {
+          "calendar": "Kalender",
+          "door_group": "Türgruppen-ID",
+          "add_another": "Weiteren Kalender hinzufügen"
+        }
+      }
+    },
+    "error": {
+      "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
+      "missing_door_group": "Die Türgruppen-ID fehlt.",
+      "missing_token": "Der API-Token fehlt.",
+      "missing_host": "Die Konsolen-Adresse fehlt.",
+      "last_calendar": "Mindestens ein Kalender muss bleiben."
+    },
+    "abort": {
+      "single_instance_allowed": "Es ist nur eine Konfiguration nötig."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "UniFi Access Gäste",
+        "description": "Aktuelle Kalender:\n{calendars}\n\nDen Token leer lassen, um den gespeicherten Token zu behalten.",
+        "data": {
+          "host": "Konsole (Host)",
+          "token": "API-Token",
+          "horizon_days": "Horizont in Tagen"
+        }
+      },
+      "menu": {
+        "title": "Kalender",
+        "description": "{calendars}",
+        "menu_options": {
+          "add_calendar": "Kalender hinzufügen",
+          "edit_calendar": "Türgruppe ändern",
+          "remove_calendar": "Kalender entfernen",
+          "save": "Speichern"
+        }
+      },
+      "add_calendar": {
+        "title": "Kalender hinzufügen",
+        "description": "Bereits hinzugefügt:\n{calendars}\n\nDen Haken entfernen, um zur Liste zurückzukehren.",
+        "data": {
+          "calendar": "Kalender",
+          "door_group": "Türgruppen-ID",
+          "add_another": "Weiteren Kalender hinzufügen"
+        }
+      },
+      "edit_calendar": {
+        "title": "Kalender wählen",
+        "data": {
+          "calendar": "Kalender"
+        }
+      },
+      "edit_door_group": {
+        "title": "Türgruppe",
+        "description": "Kalender: {calendar}",
+        "data": {
+          "door_group": "Türgruppen-ID"
+        }
+      },
+      "remove_calendar": {
+        "title": "Kalender entfernen",
+        "data": {
+          "calendar": "Kalender"
+        }
+      }
+    },
+    "error": {
+      "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
+      "missing_door_group": "Die Türgruppen-ID fehlt.",
+      "missing_token": "Der API-Token fehlt.",
+      "missing_host": "Die Konsolen-Adresse fehlt.",
+      "last_calendar": "Mindestens ein Kalender muss bleiben."
+    }
+  },
+  "services": {
+    "sync": {
+      "name": "Gäste abgleichen",
+      "description": "Kalender jetzt mit den Besuchern in UniFi Access abgleichen."
+    },
+    "download_qr_code": {
+      "name": "QR-Code herunterladen",
+      "description": "Den QR-Code eines Besuchers laden und den Dateipfad für die weitere Verarbeitung zurückgeben.",
+      "fields": {
+        "visitor_id": {
+          "name": "Besucher-ID",
+          "description": "ID des Besuchers in UniFi Access. Alternativ Kalender und Termin-UID angeben."
+        },
+        "calendar_entity": {
+          "name": "Kalender",
+          "description": "Kalender, aus dem der Besucher angelegt wurde."
+        },
+        "event_uid": {
+          "name": "Termin-UID",
+          "description": "UID des Kalendertermins, zum Beispiel 20261126150000-b94003821@beds24.com."
+        },
+        "publish": {
+          "name": "Für den Browser veröffentlichen",
+          "description": "Das Bild zusätzlich unter /local ablegen. Diese Adresse verlangt kein Login."
+        }
+      }
+    }
+  }
+}

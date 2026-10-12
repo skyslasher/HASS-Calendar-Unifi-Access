@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "UniFi Access guests",
+        "description": "The access console must be reachable on port 12445. Calendars are added in the next step.",
+        "data": {
+          "host": "Console host",
+          "token": "API token",
+          "horizon_days": "Horizon in days"
+        }
+      },
+      "calendar": {
+        "title": "Calendar and door group",
+        "description": "Already added:\n{calendars}\n\nClear the checkbox to finish setup.",
+        "data": {
+          "calendar": "Calendar",
+          "door_group": "Door group ID",
+          "add_another": "Add another calendar"
+        }
+      }
+    },
+    "error": {
+      "duplicate_calendar": "This calendar is already assigned.",
+      "missing_door_group": "The door group ID is required.",
+      "missing_token": "The API token is required.",
+      "missing_host": "The console host is required.",
+      "last_calendar": "At least one calendar is required."
+    },
+    "abort": {
+      "single_instance_allowed": "Only one configuration is needed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "UniFi Access guests",
+        "description": "Current calendars:\n{calendars}\n\nLeave the token empty to keep the stored token.",
+        "data": {
+          "host": "Console host",
+          "token": "API token",
+          "horizon_days": "Horizon in days"
+        }
+      },
+      "menu": {
+        "title": "Calendars",
+        "description": "{calendars}",
+        "menu_options": {
+          "add_calendar": "Add calendar",
+          "edit_calendar": "Edit door group",
+          "remove_calendar": "Remove calendar",
+          "save": "Save"
+        }
+      },
+      "add_calendar": {
+        "title": "Add calendar",
+        "description": "Already added:\n{calendars}\n\nClear the checkbox to return to the list.",
+        "data": {
+          "calendar": "Calendar",
+          "door_group": "Door group ID",
+          "add_another": "Add another calendar"
+        }
+      },
+      "edit_calendar": {
+        "title": "Choose calendar",
+        "data": {
+          "calendar": "Calendar"
+        }
+      },
+      "edit_door_group": {
+        "title": "Door group",
+        "description": "Calendar: {calendar}",
+        "data": {
+          "door_group": "Door group ID"
+        }
+      },
+      "remove_calendar": {
+        "title": "Remove calendar",
+        "data": {
+          "calendar": "Calendar"
+        }
+      }
+    },
+    "error": {
+      "duplicate_calendar": "This calendar is already assigned.",
+      "missing_door_group": "The door group ID is required.",
+      "missing_token": "The API token is required.",
+      "missing_host": "The console host is required.",
+      "last_calendar": "At least one calendar is required."
+    }
+  },
+  "services": {
+    "sync": {
+      "name": "Sync guests",
+      "description": "Reconcile the calendars with UniFi Access visitors now."
+    },
+    "download_qr_code": {
+      "name": "Download QR code",
+      "description": "Download the door QR code for a visitor and return the saved file.",
+      "fields": {
+        "visitor_id": {
+          "name": "Visitor ID",
+          "description": "UniFi Access visitor ID. Use this or the calendar fields."
+        },
+        "calendar_entity": {
+          "name": "Calendar",
+          "description": "Calendar that created the visitor."
+        },
+        "event_uid": {
+          "name": "Event UID",
+          "description": "UID of the calendar event."
+        },
+        "publish": {
+          "name": "Publish for browser download",
+          "description": "Also store the image at an address a browser can open without login."
+        }
+      }
+    }
+  }
+}

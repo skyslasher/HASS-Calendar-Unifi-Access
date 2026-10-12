@@ -1,0 +1,12 @@
+{
+  "domain": "unifi_guest_sync",
+  "name": "UniFi Access Gäste",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": ["calendar"],
+  "documentation": "https://hacs.xyz/docs/use/repositories/dashboard/",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "requirements": [],
+  "version": "1.0.0"
+}

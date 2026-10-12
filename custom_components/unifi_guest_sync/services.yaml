@@ -1,0 +1,34 @@
+sync:
+  name: Sync guests
+  description: Reconcile the calendars with UniFi Access visitors now.
+download_qr_code:
+  name: Download QR code
+  description: Download the door QR code for a visitor and return the saved file for automations.
+  fields:
+    visitor_id:
+      required: false
+      selector:
+        text:
+      name: Visitor ID
+      description: UniFi Access visitor ID. Use this or the calendar fields.
+    calendar_entity:
+      required: false
+      selector:
+        entity:
+          domain: calendar
+      name: Calendar
+      description: Calendar that created the visitor.
+    event_uid:
+      required: false
+      selector:
+        text:
+      name: Event UID
+      description: UID of the calendar event, for example 20261126150000-b94003821@beds24.com.
+    publish:
+      required: false
+      default: false
+      selector:
+        boolean:
+      name: Publish for browser download
+      description: Also store the image under /local so a browser can open it. That address does not require a login.
+
