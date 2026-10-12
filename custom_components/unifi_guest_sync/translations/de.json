@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "UniFi Access Gäste",
-        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Die Kalender folgen im nächsten Schritt.",
+        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Der Token braucht view:space, view:visitor und edit:visitor. Die Türgruppen werden im nächsten Schritt geladen.",
         "data": {
           "host": "Konsole (Host)",
           "token": "API-Token",
@@ -15,14 +15,16 @@
         "description": "Bereits hinzugefügt:\n{calendars}\n\nDen Haken entfernen, um die Einrichtung abzuschließen.",
         "data": {
           "calendar": "Kalender",
-          "door_group": "Türgruppen-ID",
+          "door_group": "Türgruppe",
           "add_another": "Weiteren Kalender hinzufügen"
         }
       }
     },
     "error": {
       "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
-      "missing_door_group": "Die Türgruppen-ID fehlt.",
+      "missing_door_group": "Bitte eine Türgruppe auswählen.",
+      "door_groups_unavailable": "Die Türgruppen konnten nicht geladen werden. Der Token braucht view:space, und die Konsole muss auf Port 12445 erreichbar sein.",
+      "no_door_groups": "In Access ist noch keine Türgruppe angelegt.",
       "missing_token": "Der API-Token fehlt.",
       "missing_host": "Die Konsolen-Adresse fehlt.",
       "last_calendar": "Mindestens ein Kalender muss bleiben."
@@ -57,7 +59,7 @@
         "description": "Bereits hinzugefügt:\n{calendars}\n\nDen Haken entfernen, um zur Liste zurückzukehren.",
         "data": {
           "calendar": "Kalender",
-          "door_group": "Türgruppen-ID",
+          "door_group": "Türgruppe",
           "add_another": "Weiteren Kalender hinzufügen"
         }
       },
@@ -71,7 +73,7 @@
         "title": "Türgruppe",
         "description": "Kalender: {calendar}",
         "data": {
-          "door_group": "Türgruppen-ID"
+          "door_group": "Türgruppe"
         }
       },
       "remove_calendar": {
@@ -83,7 +85,9 @@
     },
     "error": {
       "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
-      "missing_door_group": "Die Türgruppen-ID fehlt.",
+      "missing_door_group": "Bitte eine Türgruppe auswählen.",
+      "door_groups_unavailable": "Die Türgruppen konnten nicht geladen werden. Der Token braucht view:space, und die Konsole muss auf Port 12445 erreichbar sein.",
+      "no_door_groups": "In Access ist noch keine Türgruppe angelegt.",
       "missing_token": "Der API-Token fehlt.",
       "missing_host": "Die Konsolen-Adresse fehlt.",
       "last_calendar": "Mindestens ein Kalender muss bleiben."

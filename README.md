@@ -8,7 +8,7 @@ Das GitHub-Repository bleibt privat. In HACS unter **Einstellungen** einen GitHu
 
 Danach in HACS das Dreipunktmenü öffnen, **Benutzerdefinierte Repositories** wählen und die Repository-URL eintragen. Die Kategorie ist **Integration**. HACS lädt `custom_components/unifi_guest_sync` nach `/config/custom_components/unifi_guest_sync`. Home Assistant neu starten.
 
-Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** die Integration **UniFi Access Gäste** wählen. Dort die Konsolen-Adresse, den API-Token und den Horizont eintragen. Danach jedes Paar aus Kalender und Türgruppen-ID hinzufügen. Den Haken **Weiteren Kalender hinzufügen** beim letzten Paar entfernen. Der Host ist nur die Adresse, ohne `https://` und ohne Port.
+Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** die Integration **UniFi Access Gäste** wählen. Dort die Konsolen-Adresse, den API-Token und den Horizont eintragen. Der Token braucht `view:space`, `view:visitor` und `edit:visitor`. Danach jedes Paar aus Kalender und Türgruppe auswählen. Die Türgruppen kommen dabei direkt von der Konsole. Den Haken **Weiteren Kalender hinzufügen** beim letzten Paar entfernen. Der Host ist nur die Adresse, ohne `https://` und ohne Port.
 
 Der Abgleich startet danach von selbst, wiederholt sich alle fünf Minuten und lässt sich mit dem Dienst `unifi_guest_sync.sync` sofort ausführen. Der QR-Code eines Besuchers lässt sich mit `unifi_guest_sync.download_qr_code` manuell oder aus einer Automatisierung laden. Änderungen an Kalendern und Türgruppen stehen unter **Konfigurieren**. Ein leeres Token-Feld behält den gespeicherten Token.
 

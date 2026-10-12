@@ -81,20 +81,9 @@ Die PIN muss zur Länge in Access passen. Im Beispiel sind das 4 Ziffern. Diesel
 ## UniFi Access vorbereiten
 
 1. In Access eine Türgruppe pro Kalender anlegen.
-2. Unter **Einstellungen → Allgemein → API-Token** einen Token mit `view:visitor` und `edit:visitor` erzeugen.
+2. Unter **Einstellungen → Allgemein → API-Token** einen Token mit `view:space`, `view:visitor` und `edit:visitor` erzeugen. `view:space` braucht die Einrichtung, um die Türgruppen laden zu können.
 3. Die PIN-Länge so einstellen, wie sie in den Kalendern steht.
 4. Port 12445 im LAN erreichbar lassen. Home Assistant muss die Konsole direkt erreichen. Den Port nicht ins Internet stellen.
-
-Die Türgruppen-IDs liefert:
-
-```bash
-curl --insecure --silent \
-  -H "Authorization: Bearer DEIN-TOKEN" \
-  -H "Accept: application/json" \
-  "https://192.168.1.10:12445/api/v1/developer/door_groups/topology"
-```
-
-Host und Token durch die eigenen Werte ersetzen. In der Antwort die `id` der jeweiligen Gruppe notieren.
 
 ## Installation über HACS
 
@@ -106,7 +95,7 @@ Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** **UniF
 - API-Token aus Access
 - Horizont in Tagen, Standard 120
 
-Im nächsten Schritt jedes Paar aus Kalender und Türgruppen-ID eintragen. Den Haken **Weiteren Kalender hinzufügen** erst beim letzten Paar entfernen. Unter **Konfigurieren** lassen sich später weitere Kalender hinzufügen, Türgruppen ändern und Kalender entfernen. Ein entfernter Kalender verliert seine Besucher beim nächsten Abgleich. Der letzte Kalender bleibt erhalten. Ein leeres Token-Feld behält den gespeicherten Token.
+Im nächsten Schritt jedes Paar aus Kalender und Türgruppe wählen. Die Türgruppen lädt die Einrichtung von der Konsole und zeigt sie als Liste. Den Haken **Weiteren Kalender hinzufügen** erst beim letzten Paar entfernen. Unter **Konfigurieren** lassen sich später weitere Kalender hinzufügen, Türgruppen ändern und Kalender entfernen. Ein entfernter Kalender verliert seine Besucher beim nächsten Abgleich. Der letzte Kalender bleibt erhalten. Ein leeres Token-Feld behält den gespeicherten Token. Fehlt diesem Token `view:space`, bricht der nächste Schritt mit einem Fehler ab. Dann den neuen Token eintragen.
 
 Der Abgleich startet nach dem Einrichten, wiederholt sich alle fünf Minuten und lässt sich mit dem Dienst `unifi_guest_sync.sync` sofort ausführen.
 

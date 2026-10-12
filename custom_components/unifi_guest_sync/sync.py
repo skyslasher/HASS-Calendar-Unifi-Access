@@ -63,6 +63,55 @@ def _ssl_context() -> ssl.SSLContext:
     return ctx
 
 
+_DOOR_GROUP_TYPES = {"access", "building", "door_group"}
+
+
+def door_groups_from_payload(data) -> list[dict[str, str]]:
+    """Türgruppen mit id und name aus einer Listen-Antwort lesen."""
+    if isinstance(data, dict):
+        for key in ("hits", "list", "data"):
+            if isinstance(data.get(key), list):
+                data = data[key]
+                break
+        else:
+            data = [data]
+    if not isinstance(data, list):
+        return []
+    groups = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        group_id = str(item.get("id") or "").strip()
+        name = str(item.get("name") or item.get("group_name") or "").strip()
+        if group_id and name:
+            groups.append({"id": group_id, "name": name})
+    return groups
+
+
+def door_groups_from_topology(data) -> list[dict[str, str]]:
+    """Türgruppen aus der Topologie lesen, Etagen und einzelne Türen auslassen."""
+    nodes = data if isinstance(data, list) else [data] if isinstance(data, dict) else []
+    found: list[dict[str, str]] = []
+    for node in nodes:
+        if not isinstance(node, dict):
+            continue
+        if str(node.get("type") or "") in _DOOR_GROUP_TYPES:
+            found.extend(door_groups_from_payload([node]))
+        nested = node.get("resource_topologies")
+        if nested:
+            found.extend(door_groups_from_topology(nested))
+    return found
+
+
+def merge_door_groups(*collections: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Gruppen nach ID zusammenführen. Der erste Name einer ID bleibt erhalten."""
+    by_id: dict[str, dict[str, str]] = {}
+    for groups in collections:
+        for item in groups:
+            by_id.setdefault(item["id"], item)
+    return sorted(by_id.values(), key=lambda item: item["name"].casefold())
+
+
 class AccessClient:
     """Lokale UniFi-Access-API auf Port 12445."""
 
@@ -314,6 +363,18 @@ def _visitor_body(guest: dict, entity: str, door_group_id: str) -> dict:
         "remarks": _prefix(entity) + guest["key"],
         "resources": [{"id": door_group_id, "type": "door_group"}],
     }
+
+
+async def list_door_groups(client: AccessClient) -> list[dict[str, str]]:
+    """Alle Türgruppen der Konsole laden."""
+    listed = await client.request("GET", "/api/v1/developer/door_groups")
+    groups = door_groups_from_payload(listed.get("data"))
+    try:
+        topology = await client.request("GET", "/api/v1/developer/door_groups/topology")
+    except Exception:
+        _LOGGER.debug("Türgruppen-Topologie nicht verfügbar", exc_info=True)
+        topology = {}
+    return merge_door_groups(groups, door_groups_from_topology(topology.get("data")))
 
 
 async def _list_visitors(client: AccessClient) -> list:
