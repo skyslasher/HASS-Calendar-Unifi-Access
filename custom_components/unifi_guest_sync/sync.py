@@ -22,6 +22,7 @@ from .const import (
     CONF_HORIZON_DAYS,
     CONF_HOST,
     CONF_TOKEN,
+    SUBENTRY_CALENDAR,
     DEFAULT_ARRIVAL_TIME,
     DEFAULT_DEPARTURE_TIME,
     KEYWORD_ARRIVO,
@@ -532,9 +533,19 @@ async def _load_state(hass: HomeAssistant, store: Store) -> dict:
 
 
 def settings_from_entry(entry) -> dict:
-    """Konfiguration aus Ersteinrichtung und späterer Änderung zusammenführen."""
+    """Konfiguration aus Ersteinrichtung und Kalender-Einträgen zusammenführen."""
     settings = {**entry.data, **entry.options}
-    settings[CONF_CALENDARS] = list(settings.get(CONF_CALENDARS) or [])
+    links = []
+    for subentry in getattr(entry, "subentries", {}).values():
+        if subentry.subentry_type != SUBENTRY_CALENDAR:
+            continue
+        entity = subentry.data.get(CONF_ENTITY)
+        door_group_id = subentry.data.get(CONF_DOOR_GROUP_ID)
+        if entity and door_group_id:
+            links.append({CONF_ENTITY: entity, CONF_DOOR_GROUP_ID: door_group_id})
+    if not links:
+        links = list(settings.get(CONF_CALENDARS) or [])
+    settings[CONF_CALENDARS] = links
     return settings
 
 
@@ -697,6 +708,8 @@ async def async_sync_entry(hass: HomeAssistant, entry) -> None:
         for calendar in settings[CONF_CALENDARS]
         if calendar.get(CONF_ENTITY)
     }
-    if configured:
+    known = set(state.get("_managed_calendars") or [])
+    if configured or known:
         await _remove_unconfigured(hass, client, visitors, state, configured)
+    state["_managed_calendars"] = sorted(configured)
     await store.async_save(state)

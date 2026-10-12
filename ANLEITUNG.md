@@ -95,7 +95,7 @@ Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** **UniF
 - API-Token aus Access
 - Horizont in Tagen, Standard 120
 
-Die Einrichtung legt noch keine Kalender an. Unter **Konfigurieren** danach **Kalender hinzufügen** wählen und eine Verknüpfung aus Kalender und Türgruppe speichern. Die Türgruppen lädt die Einrichtung von der Konsole und zeigt sie als Liste. Den nächsten Kalender wieder über die Liste hinzufügen. **Kalender bearbeiten** ändert Kalender und Türgruppe einer bestehenden Verknüpfung. Wechselt dabei der Kalender, entfernt der nächste Abgleich die Besucher des bisherigen Kalenders und legt die des neuen an. Ein entfernter Kalender verliert seine Besucher ebenfalls. Der letzte Kalender bleibt erhalten. Ein leeres Token-Feld behält den gespeicherten Token. Fehlt diesem Token `view:space`, bricht das Speichern mit einem Fehler ab. Dann den neuen Token eintragen.
+Die Einrichtung legt noch keine Kalender an. Danach die Integration **UniFi Access Gäste** öffnen und **Kalender hinzufügen** wählen. Die Türgruppen lädt die Einrichtung von der Konsole und zeigt sie als Liste. Jeder weitere Kalender entsteht über dieselbe Schaltfläche und erscheint als eigener Eintrag. Über das Menü des Eintrags lassen sich Kalender und Türgruppe ändern oder die Verknüpfung löschen. Wechselt der Kalender oder wird die Verknüpfung gelöscht, entfernt der nächste Abgleich die zugehörigen Besucher. Host, Token und Horizont stehen unter **Verbindung ändern**. Ein leeres Token-Feld behält den gespeicherten Token. Fehlt `view:space`, kann die Türgruppenliste nicht geladen werden.
 
 Der Abgleich startet nach dem Einrichten, wiederholt sich alle fünf Minuten und lässt sich mit dem Dienst `unifi_guest_sync.sync` sofort ausführen.
 

@@ -3,7 +3,16 @@
     "step": {
       "user": {
         "title": "UniFi Access Gäste",
-        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Der Token braucht view:space, view:visitor und edit:visitor. Kalender werden danach unter Konfigurieren einzeln hinzugefügt.",
+        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Der Token braucht view:space, view:visitor und edit:visitor. Kalender werden danach auf der Integrationsseite hinzugefügt.",
+        "data": {
+          "host": "Konsole (Host)",
+          "token": "API-Token",
+          "horizon_days": "Horizont in Tagen"
+        }
+      },
+      "reconfigure": {
+        "title": "Verbindung",
+        "description": "Den Token leer lassen, um den gespeicherten Token zu behalten.",
         "data": {
           "host": "Konsole (Host)",
           "token": "API-Token",
@@ -18,67 +27,47 @@
       "missing_host": "Die Konsolen-Adresse fehlt."
     },
     "abort": {
-      "single_instance_allowed": "Es ist nur eine Konfiguration nötig."
+      "single_instance_allowed": "Es ist nur eine Konfiguration nötig.",
+      "reconfigure_successful": "Verbindung aktualisiert."
+    },
+    "initiate_flow": {
+      "reconfigure": "Verbindung ändern"
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "UniFi Access Gäste",
-        "description": "Aktuelle Kalender:\n{calendars}\n\nDen Token leer lassen, um den gespeicherten Token zu behalten.",
-        "data": {
-          "host": "Konsole (Host)",
-          "token": "API-Token",
-          "horizon_days": "Horizont in Tagen"
+  "config_subentries": {
+    "calendar": {
+      "entry_type": "Kalender",
+      "initiate_flow": {
+        "user": "Kalender hinzufügen",
+        "reconfigure": "Kalender bearbeiten"
+      },
+      "step": {
+        "user": {
+          "title": "Kalender hinzufügen",
+          "description": "Einen Kalender mit einer Türgruppe verknüpfen.",
+          "data": {
+            "calendar": "Kalender",
+            "door_group": "Türgruppe"
+          }
+        },
+        "reconfigure": {
+          "title": "Kalender bearbeiten",
+          "description": "Kalender: {calendar}\n\nWechselt der Kalender, legt der nächste Abgleich dessen Besucher neu an. Die Besucher des bisherigen Kalenders werden gelöscht.",
+          "data": {
+            "calendar": "Kalender",
+            "door_group": "Türgruppe"
+          }
         }
       },
-      "menu": {
-        "title": "Kalender",
-        "description": "{calendars}",
-        "menu_options": {
-          "add_calendar": "Kalender hinzufügen",
-          "edit_calendar": "Kalender bearbeiten",
-          "remove_calendar": "Kalender entfernen",
-          "save": "Speichern"
-        }
+      "error": {
+        "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
+        "missing_door_group": "Bitte eine Türgruppe auswählen."
       },
-      "add_calendar": {
-        "title": "Kalender hinzufügen",
-        "description": "Bereits hinzugefügt:\n{calendars}\n\nHier wird ein Kalender verknüpft. Den nächsten legt man wieder über die Liste an.",
-        "data": {
-          "calendar": "Kalender",
-          "door_group": "Türgruppe"
-        }
-      },
-      "edit_calendar": {
-        "title": "Kalender wählen",
-        "data": {
-          "calendar": "Kalender"
-        }
-      },
-      "edit_link": {
-        "title": "Kalender bearbeiten",
-        "description": "Kalender: {calendar}\n\nWechselt der Kalender, legt der nächste Abgleich dessen Besucher neu an. Die Besucher des bisherigen Kalenders werden gelöscht.",
-        "data": {
-          "calendar": "Kalender",
-          "door_group": "Türgruppe"
-        }
-      },
-      "remove_calendar": {
-        "title": "Kalender entfernen",
-        "data": {
-          "calendar": "Kalender"
-        }
+      "abort": {
+        "door_groups_unavailable": "Die Türgruppen konnten nicht geladen werden. Unter Verbindung ändern dem Token view:space geben.",
+        "no_door_groups": "In Access ist noch keine Türgruppe angelegt.",
+        "reconfigure_successful": "Kalender aktualisiert."
       }
-    },
-    "error": {
-      "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
-      "missing_door_group": "Bitte eine Türgruppe auswählen.",
-      "door_groups_unavailable": "Die Türgruppen konnten nicht geladen werden. Der Token braucht view:space, und die Konsole muss auf Port 12445 erreichbar sein.",
-      "no_door_groups": "In Access ist noch keine Türgruppe angelegt.",
-      "missing_token": "Der API-Token fehlt.",
-      "missing_host": "Die Konsolen-Adresse fehlt.",
-      "last_calendar": "Mindestens ein Kalender muss bleiben."
     }
   },
   "services": {

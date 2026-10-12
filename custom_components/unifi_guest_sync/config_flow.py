@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigSubentryFlow
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
@@ -19,8 +19,9 @@ from .const import (
     CONF_TOKEN,
     DEFAULT_HORIZON_DAYS,
     DOMAIN,
+    SUBENTRY_CALENDAR,
 )
-from .sync import AccessClient, list_door_groups
+from .sync import AccessClient, list_door_groups, settings_from_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -110,31 +111,6 @@ def _link_schema(
     )
 
 
-def _calendar_select_schema(
-    calendars: list[dict[str, str]], door_groups: list[dict[str, str]]
-) -> vol.Schema:
-    names = {group["id"]: group["name"] for group in door_groups}
-    return vol.Schema(
-        {
-            vol.Required("calendar"): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        {
-                            "value": item[CONF_ENTITY],
-                            "label": (
-                                f"{item[CONF_ENTITY]} → "
-                                f"{names.get(item[CONF_DOOR_GROUP_ID], item[CONF_DOOR_GROUP_ID])}"
-                            ),
-                        }
-                        for item in calendars
-                    ],
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                )
-            )
-        }
-    )
-
-
 def _validate_connection(user_input: dict[str, Any], *, token_required: bool) -> str | None:
     if token_required and not user_input.get(CONF_TOKEN, "").strip():
         return "missing_token"
@@ -143,14 +119,25 @@ def _validate_connection(user_input: dict[str, Any], *, token_required: bool) ->
     return None
 
 
-def _summary(calendars: list[dict[str, str]], door_groups: list[dict[str, str]]) -> str:
-    if not calendars:
-        return "-"
-    names = {group["id"]: group["name"] for group in door_groups}
-    return "\n".join(
-        f"{item[CONF_ENTITY]} → {names.get(item[CONF_DOOR_GROUP_ID], item[CONF_DOOR_GROUP_ID])}"
-        for item in calendars
+def _link_title(hass, entity: str, door_groups: list[dict[str, str]], door_group_id: str) -> str:
+    state = hass.states.get(entity)
+    calendar_name = state.name if state else entity
+    door_name = next(
+        (group["name"] for group in door_groups if group["id"] == door_group_id),
+        door_group_id,
     )
+    return f"{calendar_name} → {door_name}"
+
+
+def _duplicate_calendar(
+    entry: ConfigEntry, entity: str, *, ignore_subentry_id: str | None = None
+) -> bool:
+    for subentry in entry.subentries.values():
+        if subentry.subentry_id == ignore_subentry_id:
+            continue
+        if subentry.unique_id == entity or subentry.data.get(CONF_ENTITY) == entity:
+            return True
+    return False
 
 
 async def _fetch_door_groups(
@@ -176,7 +163,7 @@ def _known_door_group(door_group_id: str, door_groups: list[dict[str, str]]) -> 
 
 
 class UnifiGuestSyncConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Ersteinrichtung der Konsole. Kalender folgen unter Konfigurieren."""
+    """Ersteinrichtung der Konsole. Kalender werden auf der Integrationsseite angelegt."""
 
     VERSION = 1
 
@@ -210,178 +197,111 @@ class UnifiGuestSyncConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        return UnifiGuestSyncOptionsFlow()
-
-
-class UnifiGuestSyncOptionsFlow(OptionsFlow):
-    """Kalender und Türgruppen nachträglich ändern."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._connection: dict[str, Any] = {}
-        self._calendars: list[dict[str, str]] | None = None
-        self._door_groups: list[dict[str, str]] = []
-        self._edit_entity: str | None = None
-
-    def _load(self) -> None:
-        if self._calendars is not None:
-            return
-        current = {**self.config_entry.data, **self.config_entry.options}
-        self._calendars = [dict(item) for item in current.get(CONF_CALENDARS) or []]
-        self._connection = {
-            CONF_HOST: current[CONF_HOST],
-            CONF_TOKEN: current[CONF_TOKEN],
-            CONF_HORIZON_DAYS: current[CONF_HORIZON_DAYS],
-        }
-
-    async def async_step_init(self, user_input: dict[str, Any] | None = None):
-        self._load()
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        entry = self._get_reconfigure_entry()
+        current = settings_from_entry(entry)
         errors: dict[str, str] = {}
-        current = {**self.config_entry.data, **self.config_entry.options}
-        if user_input is None and not self._door_groups and self._connection.get(CONF_TOKEN):
-            groups, _error = await _fetch_door_groups(
-                self._connection[CONF_HOST], self._connection[CONF_TOKEN], quiet=True
-            )
-            if groups:
-                self._door_groups = groups
         if user_input is not None:
             error = _validate_connection(user_input, token_required=False)
             if error:
                 errors["base"] = error
             else:
-                self._connection = {
-                    CONF_HOST: _clean_host(user_input[CONF_HOST]),
-                    CONF_TOKEN: user_input.get(CONF_TOKEN, "").strip() or current[CONF_TOKEN],
-                    CONF_HORIZON_DAYS: int(user_input[CONF_HORIZON_DAYS]),
-                }
-                groups, error = await _fetch_door_groups(
-                    self._connection[CONF_HOST], self._connection[CONF_TOKEN]
-                )
+                host = _clean_host(user_input[CONF_HOST])
+                token = user_input.get(CONF_TOKEN, "").strip() or current[CONF_TOKEN]
+                _groups, error = await _fetch_door_groups(host, token)
                 if error:
                     errors["base"] = error
                 else:
-                    self._door_groups = groups or []
-                    return await self.async_step_menu()
-        shown = user_input or current
-        if user_input is not None and not user_input.get(CONF_TOKEN, "").strip():
+                    self.hass.config_entries.async_update_entry(
+                        entry,
+                        data={
+                            CONF_HOST: host,
+                            CONF_TOKEN: token,
+                            CONF_HORIZON_DAYS: int(user_input[CONF_HORIZON_DAYS]),
+                            CONF_CALENDARS: [],
+                        },
+                        options={},
+                    )
+                    return self.async_abort(reason="reconfigure_successful")
+        shown = {
+            CONF_HOST: current.get(CONF_HOST, ""),
+            CONF_HORIZON_DAYS: current.get(CONF_HORIZON_DAYS, DEFAULT_HORIZON_DAYS),
+            CONF_TOKEN: "",
+        }
+        if user_input is not None:
             shown = {**user_input, CONF_TOKEN: ""}
         return self.async_show_form(
-            step_id="init",
+            step_id="reconfigure",
             data_schema=_connection_schema(shown, token_required=False),
             errors=errors,
-            description_placeholders={
-                "calendars": _summary(self._calendars or [], self._door_groups)
-            },
         )
 
-    async def async_step_menu(self, user_input: dict[str, Any] | None = None):
-        options = ["add_calendar"]
-        if self._calendars:
-            options.append("edit_calendar")
-        if len(self._calendars or []) > 1:
-            options.append("remove_calendar")
-        options.append("save")
-        return self.async_show_menu(
-            step_id="menu",
-            menu_options=options,
-            description_placeholders={
-                "calendars": _summary(self._calendars or [], self._door_groups)
-            },
-        )
+    @classmethod
+    @callback
+    def async_get_supported_subentry_types(
+        cls, config_entry: ConfigEntry
+    ) -> dict[str, type[ConfigSubentryFlow]]:
+        return {SUBENTRY_CALENDAR: CalendarSubentryFlow}
 
-    async def async_step_add_calendar(self, user_input: dict[str, Any] | None = None):
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            error = self._store_link(user_input)
-            if error:
-                errors["base"] = error
-            else:
-                return await self.async_step_menu()
-        return self.async_show_form(
-            step_id="add_calendar",
-            data_schema=_link_schema(self._door_groups),
-            errors=errors,
-            description_placeholders={
-                "calendars": _summary(self._calendars or [], self._door_groups)
-            },
-        )
 
-    async def async_step_edit_calendar(self, user_input: dict[str, Any] | None = None):
-        if not self._calendars:
-            return await self.async_step_menu()
-        if user_input is not None:
-            self._edit_entity = user_input["calendar"]
-            return await self.async_step_edit_link()
-        return self.async_show_form(
-            step_id="edit_calendar",
-            data_schema=_calendar_select_schema(self._calendars, self._door_groups),
-        )
+class CalendarSubentryFlow(ConfigSubentryFlow):
+    """Einen Kalender mit einer Türgruppe verknüpfen."""
 
-    async def async_step_edit_link(self, user_input: dict[str, Any] | None = None):
-        errors: dict[str, str] = {}
-        current = next(
-            item for item in self._calendars or [] if item[CONF_ENTITY] == self._edit_entity
-        )
-        if user_input is not None:
-            error = self._store_link(user_input, previous=self._edit_entity)
-            if error:
-                errors["base"] = error
-            else:
-                return await self.async_step_menu()
-        return self.async_show_form(
-            step_id="edit_link",
-            data_schema=_link_schema(
-                self._door_groups,
-                calendar=current[CONF_ENTITY],
-                door_group=current[CONF_DOOR_GROUP_ID],
-            ),
-            errors=errors,
-            description_placeholders={"calendar": current[CONF_ENTITY]},
-        )
+    async def async_step_user(self, user_input: dict[str, Any] | None = None):
+        return await self._async_link(user_input, reconfigure=False)
 
-    async def async_step_remove_calendar(self, user_input: dict[str, Any] | None = None):
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            if len(self._calendars or []) <= 1:
-                errors["base"] = "last_calendar"
-            else:
-                entity = user_input["calendar"]
-                self._calendars = [
-                    item for item in self._calendars or [] if item[CONF_ENTITY] != entity
-                ]
-                return await self.async_step_menu()
-        return self.async_show_form(
-            step_id="remove_calendar",
-            data_schema=_calendar_select_schema(self._calendars or [], self._door_groups),
-            errors=errors,
-        )
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        return await self._async_link(user_input, reconfigure=True)
 
-    async def async_step_save(self, user_input: dict[str, Any] | None = None):
-        return self.async_create_entry(title="", data=self._entry_data())
-
-    def _store_link(self, user_input: dict[str, Any], *, previous: str | None = None) -> str | None:
-        entity = user_input["calendar"]
-        door_group_id = str(user_input.get("door_group") or "").strip()
-        error = _known_door_group(door_group_id, self._door_groups)
+    async def _door_groups(self) -> tuple[list[dict[str, str]] | None, str | None]:
+        cached = getattr(self, "_groups", None)
+        if cached:
+            return cached, None
+        settings = settings_from_entry(self._get_entry())
+        groups, error = await _fetch_door_groups(settings[CONF_HOST], settings[CONF_TOKEN])
         if error:
-            return error
-        if self._calendars is None:
-            self._calendars = []
-        calendars = self._calendars
-        if any(
-            item[CONF_ENTITY] == entity and item[CONF_ENTITY] != previous for item in calendars
-        ):
-            return "duplicate_calendar"
-        if previous is None:
-            calendars.append({CONF_ENTITY: entity, CONF_DOOR_GROUP_ID: door_group_id})
-            return None
-        current = next(item for item in calendars if item[CONF_ENTITY] == previous)
-        current[CONF_ENTITY] = entity
-        current[CONF_DOOR_GROUP_ID] = door_group_id
-        return None
+            return None, error
+        self._groups = groups
+        return groups, None
 
-    def _entry_data(self) -> dict[str, Any]:
-        return {**self._connection, CONF_CALENDARS: self._calendars}
+    async def _async_link(self, user_input: dict[str, Any] | None, *, reconfigure: bool):
+        groups, error = await self._door_groups()
+        if error or not groups:
+            return self.async_abort(reason=error or "door_groups_unavailable")
+        entry = self._get_entry()
+        subentry = self._get_reconfigure_subentry() if reconfigure else None
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            entity = user_input["calendar"]
+            door_group_id = str(user_input.get("door_group") or "").strip()
+            error = _known_door_group(door_group_id, groups)
+            if error:
+                errors["base"] = error
+            elif _duplicate_calendar(
+                entry,
+                entity,
+                ignore_subentry_id=subentry.subentry_id if subentry else None,
+            ):
+                errors["base"] = "duplicate_calendar"
+            else:
+                title = _link_title(self.hass, entity, groups, door_group_id)
+                data = {CONF_ENTITY: entity, CONF_DOOR_GROUP_ID: door_group_id}
+                if subentry is None:
+                    return self.async_create_entry(title=title, data=data, unique_id=entity)
+                return self.async_update_and_abort(
+                    entry,
+                    subentry,
+                    title=title,
+                    data=data,
+                    unique_id=entity,
+                )
+        calendar = subentry.data.get(CONF_ENTITY) if subentry else None
+        door_group = subentry.data.get(CONF_DOOR_GROUP_ID) if subentry else None
+        return self.async_show_form(
+            step_id="reconfigure" if reconfigure else "user",
+            data_schema=_link_schema(groups, calendar=calendar, door_group=door_group),
+            errors=errors,
+            description_placeholders={"calendar": calendar or ""},
+        )
+
+

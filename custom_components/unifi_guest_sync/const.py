@@ -10,6 +10,7 @@ CONF_HORIZON_DAYS = "horizon_days"
 CONF_CALENDARS = "calendars"
 CONF_ENTITY = "entity"
 CONF_DOOR_GROUP_ID = "door_group_id"
+SUBENTRY_CALENDAR = "calendar"
 
 DEFAULT_HORIZON_DAYS = 120
 SCAN_INTERVAL = timedelta(minutes=5)

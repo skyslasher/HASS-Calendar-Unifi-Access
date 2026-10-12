@@ -6,13 +6,26 @@ import asyncio
 import logging
 
 import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 
-from .const import DOMAIN, SCAN_INTERVAL, SERVICE_DOWNLOAD_QR, SERVICE_SYNC
-from .sync import async_download_qr_code, async_sync_entry
+from .const import (
+    CONF_CALENDARS,
+    CONF_DOOR_GROUP_ID,
+    CONF_ENTITY,
+    CONF_HORIZON_DAYS,
+    CONF_HOST,
+    CONF_TOKEN,
+    DEFAULT_HORIZON_DAYS,
+    DOMAIN,
+    SCAN_INTERVAL,
+    SERVICE_DOWNLOAD_QR,
+    SERVICE_SYNC,
+    SUBENTRY_CALENDAR,
+)
+from .sync import async_download_qr_code, async_sync_entry, settings_from_entry
 
 _LOGGER = logging.getLogger(__name__)
 _SYNC_LOCK = asyncio.Lock()
@@ -26,8 +39,45 @@ async def _run_sync(hass: HomeAssistant, entry: ConfigEntry) -> None:
         await async_sync_entry(hass, entry)
 
 
+def _migrate_calendar_subentries(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Frühere Kalenderliste in Einträge auf der Integrationsseite übernehmen."""
+    if not hasattr(entry, "subentries"):
+        return
+    raw = {**entry.data, **entry.options}
+    settings = settings_from_entry(entry)
+    known = {
+        subentry.unique_id or subentry.data.get(CONF_ENTITY)
+        for subentry in entry.subentries.values()
+        if subentry.subentry_type == SUBENTRY_CALENDAR
+    }
+    for calendar in raw.get(CONF_CALENDARS) or []:
+        entity = calendar.get(CONF_ENTITY)
+        door_group_id = calendar.get(CONF_DOOR_GROUP_ID)
+        if not entity or not door_group_id or entity in known:
+            continue
+        hass.config_entries.async_add_subentry(
+            entry,
+            ConfigSubentry(
+                data={CONF_ENTITY: entity, CONF_DOOR_GROUP_ID: door_group_id},
+                subentry_type=SUBENTRY_CALENDAR,
+                title=entity,
+                unique_id=entity,
+            ),
+        )
+        known.add(entity)
+    new_data = {
+        CONF_HOST: settings[CONF_HOST],
+        CONF_TOKEN: settings[CONF_TOKEN],
+        CONF_HORIZON_DAYS: settings.get(CONF_HORIZON_DAYS, DEFAULT_HORIZON_DAYS),
+        CONF_CALENDARS: [],
+    }
+    if dict(entry.data) != new_data or dict(entry.options):
+        hass.config_entries.async_update_entry(entry, data=new_data, options={})
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Integration starten und den Abgleich regelmäßig ausführen."""
+    _migrate_calendar_subentries(hass, entry)
 
     async def _scheduled(_now) -> None:
         await _run_sync(hass, entry)

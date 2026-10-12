@@ -3,7 +3,16 @@
     "step": {
       "user": {
         "title": "UniFi Access guests",
-        "description": "The access console must be reachable on port 12445. The token needs view:space, view:visitor and edit:visitor. Calendars are added afterwards, one at a time, under Configure.",
+        "description": "The access console must be reachable on port 12445. The token needs view:space, view:visitor and edit:visitor. Calendars are added afterwards on the integration page.",
+        "data": {
+          "host": "Console host",
+          "token": "API token",
+          "horizon_days": "Horizon in days"
+        }
+      },
+      "reconfigure": {
+        "title": "Connection",
+        "description": "Leave the token empty to keep the stored token.",
         "data": {
           "host": "Console host",
           "token": "API token",
@@ -18,67 +27,47 @@
       "missing_host": "The console host is required."
     },
     "abort": {
-      "single_instance_allowed": "Only one configuration is needed."
+      "single_instance_allowed": "Only one configuration is needed.",
+      "reconfigure_successful": "Connection updated."
+    },
+    "initiate_flow": {
+      "reconfigure": "Change connection"
     }
   },
-  "options": {
-    "step": {
-      "init": {
-        "title": "UniFi Access guests",
-        "description": "Current calendars:\n{calendars}\n\nLeave the token empty to keep the stored token.",
-        "data": {
-          "host": "Console host",
-          "token": "API token",
-          "horizon_days": "Horizon in days"
+  "config_subentries": {
+    "calendar": {
+      "entry_type": "Calendar",
+      "initiate_flow": {
+        "user": "Add calendar",
+        "reconfigure": "Edit calendar"
+      },
+      "step": {
+        "user": {
+          "title": "Add calendar",
+          "description": "Link one calendar to a door group.",
+          "data": {
+            "calendar": "Calendar",
+            "door_group": "Door group"
+          }
+        },
+        "reconfigure": {
+          "title": "Edit calendar",
+          "description": "Calendar: {calendar}\n\nChanging the calendar replaces its visitors on the next sync. Visitors of the previous calendar are removed.",
+          "data": {
+            "calendar": "Calendar",
+            "door_group": "Door group"
+          }
         }
       },
-      "menu": {
-        "title": "Calendars",
-        "description": "{calendars}",
-        "menu_options": {
-          "add_calendar": "Add calendar",
-          "edit_calendar": "Edit calendar",
-          "remove_calendar": "Remove calendar",
-          "save": "Save"
-        }
+      "error": {
+        "duplicate_calendar": "This calendar is already assigned.",
+        "missing_door_group": "Select a door group."
       },
-      "add_calendar": {
-        "title": "Add calendar",
-        "description": "Already added:\n{calendars}\n\nThis adds one calendar. The next one is added from the list.",
-        "data": {
-          "calendar": "Calendar",
-          "door_group": "Door group"
-        }
-      },
-      "edit_calendar": {
-        "title": "Choose calendar",
-        "data": {
-          "calendar": "Calendar"
-        }
-      },
-      "edit_link": {
-        "title": "Edit calendar",
-        "description": "Calendar: {calendar}\n\nChanging the calendar replaces its visitors on the next sync. Visitors of the previous calendar are removed.",
-        "data": {
-          "calendar": "Calendar",
-          "door_group": "Door group"
-        }
-      },
-      "remove_calendar": {
-        "title": "Remove calendar",
-        "data": {
-          "calendar": "Calendar"
-        }
+      "abort": {
+        "door_groups_unavailable": "Door groups could not be loaded. Change the connection and give the token view:space.",
+        "no_door_groups": "Access has no door group yet.",
+        "reconfigure_successful": "Calendar updated."
       }
-    },
-    "error": {
-      "duplicate_calendar": "This calendar is already assigned.",
-      "missing_door_group": "Select a door group.",
-      "door_groups_unavailable": "Door groups could not be loaded. The token needs view:space, and the console must be reachable on port 12445.",
-      "no_door_groups": "Access has no door group yet.",
-      "missing_token": "The API token is required.",
-      "missing_host": "The console host is required.",
-      "last_calendar": "At least one calendar is required."
     }
   },
   "services": {
