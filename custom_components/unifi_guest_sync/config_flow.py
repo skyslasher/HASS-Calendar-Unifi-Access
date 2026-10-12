@@ -1,4 +1,4 @@
-"""Einrichtung beliebig vieler Kalender und Türgruppen."""
+"""Einrichtung beliebig vieler Kalender und Richtlinien."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_CALENDARS,
-    CONF_DOOR_GROUP_ID,
     CONF_ENTITY,
+    CONF_POLICY_ID,
     CONF_HORIZON_DAYS,
     CONF_HOST,
     CONF_TOKEN,
@@ -21,7 +21,7 @@ from .const import (
     DOMAIN,
     SUBENTRY_CALENDAR,
 )
-from .sync import AccessClient, list_door_groups, settings_from_entry
+from .sync import AccessClient, list_policies, settings_from_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,48 +65,48 @@ def _connection_schema(defaults: dict[str, Any] | None = None, *, token_required
     )
 
 
-def _door_group_options(door_groups: list[dict[str, str]]) -> list[dict[str, str]]:
+def _policy_options(policies: list[dict[str, str]]) -> list[dict[str, str]]:
     counts: dict[str, int] = {}
-    for group in door_groups:
-        counts[group["name"]] = counts.get(group["name"], 0) + 1
+    for policy in policies:
+        counts[policy["name"]] = counts.get(policy["name"], 0) + 1
     options = []
-    for group in door_groups:
-        label = group["name"]
-        if counts[group["name"]] > 1:
-            label = f"{label} ({group['id'][:8]})"
-        options.append({"value": group["id"], "label": label})
+    for policy in policies:
+        label = policy["name"]
+        if counts[policy["name"]] > 1:
+            label = f"{label} ({policy['id'][:8]})"
+        options.append({"value": policy["id"], "label": label})
     return options
 
 
-def _door_group_schema(door_groups: list[dict[str, str]], default: str | None = None):
-    known = {group["id"] for group in door_groups}
-    field = vol.Required("door_group")
+def _policy_schema(policies: list[dict[str, str]], default: str | None = None):
+    known = {policy["id"] for policy in policies}
+    field = vol.Required("policy")
     if default in known:
-        field = vol.Required("door_group", default=default)
+        field = vol.Required("policy", default=default)
     return field, selector.SelectSelector(
         selector.SelectSelectorConfig(
-            options=_door_group_options(door_groups),
+            options=_policy_options(policies),
             mode=selector.SelectSelectorMode.DROPDOWN,
         )
     )
 
 
 def _link_schema(
-    door_groups: list[dict[str, str]],
+    policies: list[dict[str, str]],
     *,
     calendar: str | None = None,
-    door_group: str | None = None,
+    policy: str | None = None,
 ) -> vol.Schema:
     calendar_field = vol.Required("calendar")
     if calendar:
         calendar_field = vol.Required("calendar", default=calendar)
-    door_field, door_control = _door_group_schema(door_groups, door_group)
+    policy_field, policy_control = _policy_schema(policies, policy)
     return vol.Schema(
         {
             calendar_field: selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="calendar")
             ),
-            door_field: door_control,
+            policy_field: policy_control,
         }
     )
 
@@ -119,14 +119,14 @@ def _validate_connection(user_input: dict[str, Any], *, token_required: bool) ->
     return None
 
 
-def _link_title(hass, entity: str, door_groups: list[dict[str, str]], door_group_id: str) -> str:
+def _link_title(hass, entity: str, policies: list[dict[str, str]], policy_id: str) -> str:
     state = hass.states.get(entity)
     calendar_name = state.name if state else entity
-    door_name = next(
-        (group["name"] for group in door_groups if group["id"] == door_group_id),
-        door_group_id,
+    policy_name = next(
+        (policy["name"] for policy in policies if policy["id"] == policy_id),
+        policy_id,
     )
-    return f"{calendar_name} → {door_name}"
+    return f"{calendar_name} → {policy_name}"
 
 
 def _duplicate_calendar(
@@ -140,26 +140,26 @@ def _duplicate_calendar(
     return False
 
 
-async def _fetch_door_groups(
+async def _fetch_policies(
     host: str, token: str, *, quiet: bool = False
 ) -> tuple[list[dict[str, str]] | None, str | None]:
     try:
-        groups = await list_door_groups(AccessClient(host, token))
+        policies = await list_policies(AccessClient(host, token))
     except Exception:
         if quiet:
-            _LOGGER.debug("Türgruppen von %s konnten nicht geladen werden", host, exc_info=True)
+            _LOGGER.debug("Richtlinien von %s konnten nicht geladen werden", host, exc_info=True)
         else:
-            _LOGGER.exception("Türgruppen von %s konnten nicht geladen werden", host)
-        return None, "door_groups_unavailable"
-    if not groups:
-        return None, "no_door_groups"
-    return groups, None
+            _LOGGER.exception("Richtlinien von %s konnten nicht geladen werden", host)
+        return None, "policies_unavailable"
+    if not policies:
+        return None, "no_policies"
+    return policies, None
 
 
-def _known_door_group(door_group_id: str, door_groups: list[dict[str, str]]) -> str | None:
-    if door_group_id and any(group["id"] == door_group_id for group in door_groups):
+def _known_policy(policy_id: str, policies: list[dict[str, str]]) -> str | None:
+    if policy_id and any(policy["id"] == policy_id for policy in policies):
         return None
-    return "missing_door_group"
+    return "missing_policy"
 
 
 class UnifiGuestSyncConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -178,7 +178,7 @@ class UnifiGuestSyncConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 host = _clean_host(user_input[CONF_HOST])
                 token = user_input[CONF_TOKEN].strip()
-                _groups, error = await _fetch_door_groups(host, token)
+                _policies, error = await _fetch_policies(host, token)
                 if error:
                     errors["base"] = error
                 else:
@@ -208,7 +208,7 @@ class UnifiGuestSyncConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 host = _clean_host(user_input[CONF_HOST])
                 token = user_input.get(CONF_TOKEN, "").strip() or current[CONF_TOKEN]
-                _groups, error = await _fetch_door_groups(host, token)
+                _policies, error = await _fetch_policies(host, token)
                 if error:
                     errors["base"] = error
                 else:
@@ -245,7 +245,7 @@ class UnifiGuestSyncConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class CalendarSubentryFlow(ConfigSubentryFlow):
-    """Einen Kalender mit einer Türgruppe verknüpfen."""
+    """Einen Kalender mit einer Richtlinie verknüpfen."""
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         return await self._async_link(user_input, reconfigure=False)
@@ -253,28 +253,28 @@ class CalendarSubentryFlow(ConfigSubentryFlow):
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
         return await self._async_link(user_input, reconfigure=True)
 
-    async def _door_groups(self) -> tuple[list[dict[str, str]] | None, str | None]:
-        cached = getattr(self, "_groups", None)
+    async def _policies(self) -> tuple[list[dict[str, str]] | None, str | None]:
+        cached = getattr(self, "_policy_list", None)
         if cached:
             return cached, None
         settings = settings_from_entry(self._get_entry())
-        groups, error = await _fetch_door_groups(settings[CONF_HOST], settings[CONF_TOKEN])
+        policies, error = await _fetch_policies(settings[CONF_HOST], settings[CONF_TOKEN])
         if error:
             return None, error
-        self._groups = groups
-        return groups, None
+        self._policy_list = policies
+        return policies, None
 
     async def _async_link(self, user_input: dict[str, Any] | None, *, reconfigure: bool):
-        groups, error = await self._door_groups()
-        if error or not groups:
-            return self.async_abort(reason=error or "door_groups_unavailable")
+        policies, error = await self._policies()
+        if error or not policies:
+            return self.async_abort(reason=error or "policies_unavailable")
         entry = self._get_entry()
         subentry = self._get_reconfigure_subentry() if reconfigure else None
         errors: dict[str, str] = {}
         if user_input is not None:
             entity = user_input["calendar"]
-            door_group_id = str(user_input.get("door_group") or "").strip()
-            error = _known_door_group(door_group_id, groups)
+            policy_id = str(user_input.get("policy") or "").strip()
+            error = _known_policy(policy_id, policies)
             if error:
                 errors["base"] = error
             elif _duplicate_calendar(
@@ -284,8 +284,8 @@ class CalendarSubentryFlow(ConfigSubentryFlow):
             ):
                 errors["base"] = "duplicate_calendar"
             else:
-                title = _link_title(self.hass, entity, groups, door_group_id)
-                data = {CONF_ENTITY: entity, CONF_DOOR_GROUP_ID: door_group_id}
+                title = _link_title(self.hass, entity, policies, policy_id)
+                data = {CONF_ENTITY: entity, CONF_POLICY_ID: policy_id}
                 if subentry is None:
                     return self.async_create_entry(title=title, data=data, unique_id=entity)
                 return self.async_update_and_abort(
@@ -296,10 +296,10 @@ class CalendarSubentryFlow(ConfigSubentryFlow):
                     unique_id=entity,
                 )
         calendar = subentry.data.get(CONF_ENTITY) if subentry else None
-        door_group = subentry.data.get(CONF_DOOR_GROUP_ID) if subentry else None
+        policy_id = subentry.data.get(CONF_POLICY_ID) if subentry else None
         return self.async_show_form(
             step_id="reconfigure" if reconfigure else "user",
-            data_schema=_link_schema(groups, calendar=calendar, door_group=door_group),
+            data_schema=_link_schema(policies, calendar=calendar, policy=policy_id),
             errors=errors,
             description_placeholders={"calendar": calendar or ""},
         )

@@ -9,7 +9,7 @@ CONF_TOKEN = "token"
 CONF_HORIZON_DAYS = "horizon_days"
 CONF_CALENDARS = "calendars"
 CONF_ENTITY = "entity"
-CONF_DOOR_GROUP_ID = "door_group_id"
+CONF_POLICY_ID = "policy_id"
 SUBENTRY_CALENDAR = "calendar"
 
 DEFAULT_HORIZON_DAYS = 120

@@ -17,8 +17,8 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_CALENDARS,
-    CONF_DOOR_GROUP_ID,
     CONF_ENTITY,
+    CONF_POLICY_ID,
     CONF_HORIZON_DAYS,
     CONF_HOST,
     CONF_TOKEN,
@@ -64,11 +64,8 @@ def _ssl_context() -> ssl.SSLContext:
     return ctx
 
 
-_DOOR_GROUP_TYPES = {"access", "building", "door_group"}
-
-
-def door_groups_from_payload(data) -> list[dict[str, str]]:
-    """Türgruppen mit id und name aus einer Listen-Antwort lesen."""
+def policies_from_payload(data) -> list[dict[str, str]]:
+    """Richtlinien mit id und name aus einer Listen-Antwort lesen."""
     if isinstance(data, dict):
         for key in ("hits", "list", "data"):
             if isinstance(data.get(key), list):
@@ -78,39 +75,15 @@ def door_groups_from_payload(data) -> list[dict[str, str]]:
             data = [data]
     if not isinstance(data, list):
         return []
-    groups = []
+    policies = []
     for item in data:
         if not isinstance(item, dict):
             continue
-        group_id = str(item.get("id") or "").strip()
-        name = str(item.get("name") or item.get("group_name") or "").strip()
-        if group_id and name:
-            groups.append({"id": group_id, "name": name})
-    return groups
-
-
-def door_groups_from_topology(data) -> list[dict[str, str]]:
-    """Türgruppen aus der Topologie lesen, Etagen und einzelne Türen auslassen."""
-    nodes = data if isinstance(data, list) else [data] if isinstance(data, dict) else []
-    found: list[dict[str, str]] = []
-    for node in nodes:
-        if not isinstance(node, dict):
-            continue
-        if str(node.get("type") or "") in _DOOR_GROUP_TYPES:
-            found.extend(door_groups_from_payload([node]))
-        nested = node.get("resource_topologies")
-        if nested:
-            found.extend(door_groups_from_topology(nested))
-    return found
-
-
-def merge_door_groups(*collections: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Gruppen nach ID zusammenführen. Der erste Name einer ID bleibt erhalten."""
-    by_id: dict[str, dict[str, str]] = {}
-    for groups in collections:
-        for item in groups:
-            by_id.setdefault(item["id"], item)
-    return sorted(by_id.values(), key=lambda item: item["name"].casefold())
+        policy_id = str(item.get("id") or "").strip()
+        name = str(item.get("name") or "").strip()
+        if policy_id and name:
+            policies.append({"id": policy_id, "name": name})
+    return sorted(policies, key=lambda item: item["name"].casefold())
 
 
 class AccessClient:
@@ -354,7 +327,7 @@ def _parse_events(response: dict, entity_id: str, now: datetime):
     return found, keep_keys
 
 
-def _visitor_body(guest: dict, entity: str, door_group_id: str) -> dict:
+def _visitor_body(guest: dict, entity: str, policy_id: str) -> dict:
     return {
         "first_name": guest["first"],
         "last_name": guest["last"],
@@ -362,20 +335,14 @@ def _visitor_body(guest: dict, entity: str, door_group_id: str) -> dict:
         "end_time": guest["end"],
         "visit_reason": "Others",
         "remarks": _prefix(entity) + guest["key"],
-        "resources": [{"id": door_group_id, "type": "door_group"}],
+        "access_policy_ids": [policy_id],
     }
 
 
-async def list_door_groups(client: AccessClient) -> list[dict[str, str]]:
-    """Alle Türgruppen der Konsole laden."""
-    listed = await client.request("GET", "/api/v1/developer/door_groups")
-    groups = door_groups_from_payload(listed.get("data"))
-    try:
-        topology = await client.request("GET", "/api/v1/developer/door_groups/topology")
-    except Exception:
-        _LOGGER.debug("Türgruppen-Topologie nicht verfügbar", exc_info=True)
-        topology = {}
-    return merge_door_groups(groups, door_groups_from_topology(topology.get("data")))
+async def list_policies(client: AccessClient) -> list[dict[str, str]]:
+    """Alle Richtlinien der Konsole laden."""
+    listed = await client.request("GET", "/api/v1/developer/access_policies")
+    return policies_from_payload(listed.get("data"))
 
 
 async def _list_visitors(client: AccessClient) -> list:
@@ -409,9 +376,9 @@ async def _assign_pin(client: AccessClient, visitor_id: str, pin: str) -> None:
 
 async def _sync_calendar(hass, client, calendar, visitors, state, now, window_end) -> None:
     entity = calendar[CONF_ENTITY]
-    door_group_id = calendar[CONF_DOOR_GROUP_ID]
-    if not entity or not door_group_id:
-        _LOGGER.error("Kalender ohne Entität oder Türgruppe: %s", calendar)
+    policy_id = calendar[CONF_POLICY_ID]
+    if not entity or not policy_id:
+        _LOGGER.error("Kalender ohne Entität oder Richtlinie: %s", calendar)
         return
 
     response = await hass.services.async_call(
@@ -438,7 +405,7 @@ async def _sync_calendar(hass, client, calendar, visitors, state, now, window_en
     for key, guest in by_key.items():
         fingerprint = (
             f"{guest['first']}|{guest['last']}|{guest['start']}|"
-            f"{guest['end']}|{guest['pin']}|{door_group_id}"
+            f"{guest['end']}|{guest['pin']}|{policy_id}"
         )
         visitor = managed.get(key)
         previous = cal_state.get(key) or {}
@@ -447,7 +414,7 @@ async def _sync_calendar(hass, client, calendar, visitors, state, now, window_en
                 created = await client.request(
                     "POST",
                     "/api/v1/developer/visitors",
-                    _visitor_body(guest, entity, door_group_id),
+                    _visitor_body(guest, entity, policy_id),
                 )
                 visitor_id = created["data"]["id"]
                 await _assign_pin(client, visitor_id, guest["pin"])
@@ -460,7 +427,7 @@ async def _sync_calendar(hass, client, calendar, visitors, state, now, window_en
                     await client.request(
                         "PUT",
                         f"/api/v1/developer/visitors/{visitor_id}",
-                        _visitor_body(guest, entity, door_group_id),
+                        _visitor_body(guest, entity, policy_id),
                     )
                     if previous.get("pin") != guest["pin"]:
                         await _assign_pin(client, visitor_id, guest["pin"])
@@ -540,9 +507,9 @@ def settings_from_entry(entry) -> dict:
         if subentry.subentry_type != SUBENTRY_CALENDAR:
             continue
         entity = subentry.data.get(CONF_ENTITY)
-        door_group_id = subentry.data.get(CONF_DOOR_GROUP_ID)
-        if entity and door_group_id:
-            links.append({CONF_ENTITY: entity, CONF_DOOR_GROUP_ID: door_group_id})
+        policy_id = subentry.data.get(CONF_POLICY_ID)
+        if entity and policy_id:
+            links.append({CONF_ENTITY: entity, CONF_POLICY_ID: policy_id})
     if not links:
         links = list(settings.get(CONF_CALENDARS) or [])
     settings[CONF_CALENDARS] = links
@@ -708,8 +675,15 @@ async def async_sync_entry(hass: HomeAssistant, entry) -> None:
         for calendar in settings[CONF_CALENDARS]
         if calendar.get(CONF_ENTITY)
     }
+    retained = set(configured)
+    for subentry in getattr(entry, "subentries", {}).values():
+        if subentry.subentry_type != SUBENTRY_CALENDAR:
+            continue
+        entity = subentry.data.get(CONF_ENTITY)
+        if entity:
+            retained.add(entity)
     known = set(state.get("_managed_calendars") or [])
-    if configured or known:
-        await _remove_unconfigured(hass, client, visitors, state, configured)
-    state["_managed_calendars"] = sorted(configured)
+    if retained or known:
+        await _remove_unconfigured(hass, client, visitors, state, retained)
+    state["_managed_calendars"] = sorted(retained)
     await store.async_save(state)

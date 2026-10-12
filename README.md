@@ -1,6 +1,6 @@
 # UniFi Access Gäste
 
-Jeder Remote-Kalender legt Besucher in UniFi Access an und bedient eine Türgruppe. Die Anzahl der Paare ist frei wählbar. Name und PIN kommen aus dem Termin. Die Zugangsdaten liegen danach auf der lokalen Access-Konsole, damit die Tür auch ohne Internet und ohne Home Assistant öffnet.
+Jeder Remote-Kalender legt Besucher in UniFi Access an und bedient eine Richtlinie. Die Anzahl der Paare ist frei wählbar. Name und PIN kommen aus dem Termin. Die Zugangsdaten liegen danach auf der lokalen Access-Konsole, damit die Tür auch ohne Internet und ohne Home Assistant öffnet.
 
 ## Privates Repository in HACS
 
@@ -8,8 +8,8 @@ Das GitHub-Repository bleibt privat. In HACS unter **Einstellungen** einen GitHu
 
 Danach in HACS das Dreipunktmenü öffnen, **Benutzerdefinierte Repositories** wählen und die Repository-URL eintragen. Die Kategorie ist **Integration**. HACS lädt `custom_components/unifi_guest_sync` nach `/config/custom_components/unifi_guest_sync`. Home Assistant neu starten.
 
-Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** die Integration **UniFi Access Gäste** wählen. Dort nur die Konsolen-Adresse, den API-Token und den Horizont eintragen. Der Token braucht `view:space`, `view:visitor` und `edit:visitor`. Der Host ist nur die Adresse, ohne `https://` und ohne Port. Danach die Integration öffnen und **Kalender hinzufügen** wählen. Jede Verknüpfung erscheint als eigener Eintrag und lässt sich dort bearbeiten oder löschen. Host und Token später über **Verbindung ändern**.
+Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** die Integration **UniFi Access Gäste** wählen. Dort nur die Konsolen-Adresse, den API-Token und den Horizont eintragen. Der Token braucht `view:policy`, `view:visitor` und `edit:visitor`. Der Host ist nur die Adresse, ohne `https://` und ohne Port. Danach die Integration öffnen und **Kalender hinzufügen** wählen. Jede Verknüpfung erscheint als eigener Eintrag und lässt sich dort bearbeiten oder löschen. Host und Token später über **Verbindung ändern**.
 
-Der Abgleich startet danach von selbst, wiederholt sich alle fünf Minuten und lässt sich mit dem Dienst `unifi_guest_sync.sync` sofort ausführen. Der QR-Code eines Besuchers lässt sich mit `unifi_guest_sync.download_qr_code` manuell oder aus einer Automatisierung laden. Änderungen an Kalendern und Türgruppen stehen unter **Konfigurieren**. Ein leeres Token-Feld behält den gespeicherten Token.
+Der Abgleich startet danach von selbst, wiederholt sich alle fünf Minuten und lässt sich mit dem Dienst `unifi_guest_sync.sync` sofort ausführen. Der QR-Code eines Besuchers lässt sich mit `unifi_guest_sync.download_qr_code` manuell oder aus einer Automatisierung laden. Änderungen an Kalendern und Richtlinien stehen auf der Integrationsseite. Ein leeres Token-Feld behält den gespeicherten Token.
 
 Die Terminformate, Standardzeiten und das Verhalten bei Ausfällen stehen in [ANLEITUNG.md](ANLEITUNG.md).

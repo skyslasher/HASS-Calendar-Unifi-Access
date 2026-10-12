@@ -1,6 +1,6 @@
 # Gäste aus Beds24-Kalendern in UniFi Access
 
-Home Assistant gleicht beliebig viele Kalender mit der lokalen UniFi-Access-Konsole ab. Jeder Kalender bedient eine Türgruppe. Aus jedem bestätigten Termin mit PIN wird ein Besucher. Geänderte Termine ändern denselben Besucher. Gelöschte, nicht mehr bestätigte und beendete Termine löschen ihn. Ein Termin mit `Privat` wird nur angelegt, wenn auf `PIN` ein Wert folgt.
+Home Assistant gleicht beliebig viele Kalender mit der lokalen UniFi-Access-Konsole ab. Jeder Kalender bedient eine Richtlinie. Aus jedem bestätigten Termin mit PIN wird ein Besucher. Geänderte Termine ändern denselben Besucher. Gelöschte, nicht mehr bestätigte und beendete Termine löschen ihn. Ein Termin mit `Privat` wird nur angelegt, wenn auf `PIN` ein Wert folgt.
 
 Der Besucher und die PIN liegen danach in UniFi Access und werden an den Tür-Hub übertragen. Die Prüfung an der Tür läuft lokal. Eine bereits übertragene PIN bleibt gültig, wenn Internet oder Home Assistant ausfallen. Neu anlegen, ändern und löschen braucht den nächsten erfolgreichen Abgleich.
 
@@ -80,8 +80,8 @@ Die PIN muss zur Länge in Access passen. Im Beispiel sind das 4 Ziffern. Diesel
 
 ## UniFi Access vorbereiten
 
-1. In Access eine Türgruppe pro Kalender anlegen.
-2. Unter **Einstellungen → Allgemein → API-Token** einen Token mit `view:space`, `view:visitor` und `edit:visitor` erzeugen. `view:space` braucht die Einrichtung, um die Türgruppen laden zu können.
+1. In Access eine Richtlinie pro Kalender anlegen.
+2. Unter **Einstellungen → Allgemein → API-Token** einen Token mit `view:policy`, `view:visitor` und `edit:visitor` erzeugen. `view:policy` braucht die Einrichtung, um die Richtlinien laden zu können.
 3. Die PIN-Länge so einstellen, wie sie in den Kalendern steht.
 4. Port 12445 im LAN erreichbar lassen. Home Assistant muss die Konsole direkt erreichen. Den Port nicht ins Internet stellen.
 
@@ -95,7 +95,7 @@ Unter **Einstellungen → Geräte & Dienste → Integration hinzufügen** **UniF
 - API-Token aus Access
 - Horizont in Tagen, Standard 120
 
-Die Einrichtung legt noch keine Kalender an. Danach die Integration **UniFi Access Gäste** öffnen und **Kalender hinzufügen** wählen. Die Türgruppen lädt die Einrichtung von der Konsole und zeigt sie als Liste. Jeder weitere Kalender entsteht über dieselbe Schaltfläche und erscheint als eigener Eintrag. Über das Menü des Eintrags lassen sich Kalender und Türgruppe ändern oder die Verknüpfung löschen. Wechselt der Kalender oder wird die Verknüpfung gelöscht, entfernt der nächste Abgleich die zugehörigen Besucher. Host, Token und Horizont stehen unter **Verbindung ändern**. Ein leeres Token-Feld behält den gespeicherten Token. Fehlt `view:space`, kann die Türgruppenliste nicht geladen werden.
+Die Einrichtung legt noch keine Kalender an. Danach die Integration **UniFi Access Gäste** öffnen und **Kalender hinzufügen** wählen. Die Richtlinien lädt die Einrichtung von der Konsole und zeigt sie als Liste. Jeder weitere Kalender entsteht über dieselbe Schaltfläche und erscheint als eigener Eintrag. Über das Menü des Eintrags lassen sich Kalender und Richtlinie ändern oder die Verknüpfung löschen. Wechselt der Kalender oder wird die Verknüpfung gelöscht, entfernt der nächste Abgleich die zugehörigen Besucher. Host, Token und Horizont stehen unter **Verbindung ändern**. Ein leeres Token-Feld behält den gespeicherten Token. Fehlt `view:policy`, kann die Richtlinienliste nicht geladen werden. Bereits verknüpfte Türgruppen gelten nicht mehr. Die Richtlinie ist im Kalendereintrag neu zu wählen.
 
 Der Abgleich startet nach dem Einrichten, wiederholt sich alle fünf Minuten und lässt sich mit dem Dienst `unifi_guest_sync.sync` sofort ausführen.
 
@@ -103,14 +103,14 @@ Der Abgleich startet nach dem Einrichten, wiederholt sich alle fünf Minuten und
 
 Unter **Entwicklerwerkzeuge → Aktionen** den Dienst `unifi_guest_sync.sync` ausführen.
 
-Für einen bestätigten Termin ohne `Arrivo` und `Partenza` muss in Access der Besucher mit PIN und nur der Türgruppe seines Kalenders stehen. Der Zugang läuft von 15:00 am Anreisetag bis 11:00 am Abreisetag.
+Für einen bestätigten Termin ohne `Arrivo` und `Partenza` muss in Access der Besucher mit PIN und der Richtlinie seines Kalenders stehen. Der Zugang läuft von 15:00 am Anreisetag bis 11:00 am Abreisetag.
 
 Danach nacheinander prüfen:
 
 1. `Arrivo` oder `Partenza` setzen. Nach dem nächsten Lauf gelten diese Uhrzeiten am selben An- und Abreisetag.
 2. Einen Termin mit der Zeile `Privat` und leerer `PIN` anlegen. In Access entsteht kein Besucher.
 3. Bei demselben Termin eine PIN eintragen. Der Besucher wird angelegt.
-4. Titel oder PIN ändern. Es bleibt derselbe Besucher, die Türgruppe bleibt die des Kalenders.
+4. Titel oder PIN ändern. Es bleibt derselbe Besucher, die Richtlinie bleibt die des Kalenders.
 5. Den Termin löschen, den Status von `Confirmed` wegändern, oder das Zugangsende abwarten lassen. Der Besucher verschwindet.
 6. Dieselbe PIN an der Tür eingeben, während Home Assistant gestoppt und die Internetverbindung getrennt ist. Der Zutritt muss funktionieren, solange der Zugang noch nicht beendet ist.
 

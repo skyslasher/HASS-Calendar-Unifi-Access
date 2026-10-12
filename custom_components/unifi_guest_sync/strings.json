@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "UniFi Access guests",
-        "description": "The access console must be reachable on port 12445. The token needs view:space, view:visitor and edit:visitor. Calendars are added afterwards on the integration page.",
+        "description": "The access console must be reachable on port 12445. The token needs view:policy, view:visitor and edit:visitor. Calendars are added afterwards on the integration page.",
         "data": {
           "host": "Console host",
           "token": "API token",
@@ -21,8 +21,8 @@
       }
     },
     "error": {
-      "door_groups_unavailable": "Door groups could not be loaded. The token needs view:space, and the console must be reachable on port 12445.",
-      "no_door_groups": "Access has no door group yet.",
+      "policies_unavailable": "Access policies could not be loaded. The token needs view:policy, and the console must be reachable on port 12445.",
+      "no_policies": "Access has no policy yet.",
       "missing_token": "The API token is required.",
       "missing_host": "The console host is required."
     },
@@ -44,10 +44,10 @@
       "step": {
         "user": {
           "title": "Add calendar",
-          "description": "Link one calendar to a door group.",
+          "description": "Link one calendar to an access policy.",
           "data": {
             "calendar": "Calendar",
-            "door_group": "Door group"
+            "policy": "Access policy"
           }
         },
         "reconfigure": {
@@ -55,17 +55,17 @@
           "description": "Calendar: {calendar}\n\nChanging the calendar replaces its visitors on the next sync. Visitors of the previous calendar are removed.",
           "data": {
             "calendar": "Calendar",
-            "door_group": "Door group"
+            "policy": "Access policy"
           }
         }
       },
       "error": {
         "duplicate_calendar": "This calendar is already assigned.",
-        "missing_door_group": "Select a door group."
+        "missing_policy": "Select an access policy."
       },
       "abort": {
-        "door_groups_unavailable": "Door groups could not be loaded. Change the connection and give the token view:space.",
-        "no_door_groups": "Access has no door group yet.",
+        "policies_unavailable": "Access policies could not be loaded. Change the connection and give the token view:policy.",
+        "no_policies": "Access has no policy yet.",
         "reconfigure_successful": "Calendar updated."
       }
     }

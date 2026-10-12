@@ -13,8 +13,8 @@ from homeassistant.helpers.event import async_track_time_interval
 
 from .const import (
     CONF_CALENDARS,
-    CONF_DOOR_GROUP_ID,
     CONF_ENTITY,
+    CONF_POLICY_ID,
     CONF_HORIZON_DAYS,
     CONF_HOST,
     CONF_TOKEN,
@@ -52,13 +52,16 @@ def _migrate_calendar_subentries(hass: HomeAssistant, entry: ConfigEntry) -> Non
     }
     for calendar in raw.get(CONF_CALENDARS) or []:
         entity = calendar.get(CONF_ENTITY)
-        door_group_id = calendar.get(CONF_DOOR_GROUP_ID)
-        if not entity or not door_group_id or entity in known:
+        policy_id = calendar.get(CONF_POLICY_ID)
+        if not entity or entity in known:
             continue
+        data = {CONF_ENTITY: entity}
+        if policy_id:
+            data[CONF_POLICY_ID] = policy_id
         hass.config_entries.async_add_subentry(
             entry,
             ConfigSubentry(
-                data={CONF_ENTITY: entity, CONF_DOOR_GROUP_ID: door_group_id},
+                data=data,
                 subentry_type=SUBENTRY_CALENDAR,
                 title=entity,
                 unique_id=entity,

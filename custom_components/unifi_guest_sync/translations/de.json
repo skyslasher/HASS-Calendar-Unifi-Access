@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "UniFi Access Gäste",
-        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Der Token braucht view:space, view:visitor und edit:visitor. Kalender werden danach auf der Integrationsseite hinzugefügt.",
+        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Der Token braucht view:policy, view:visitor und edit:visitor. Kalender werden danach auf der Integrationsseite hinzugefügt.",
         "data": {
           "host": "Konsole (Host)",
           "token": "API-Token",
@@ -21,8 +21,8 @@
       }
     },
     "error": {
-      "door_groups_unavailable": "Die Türgruppen konnten nicht geladen werden. Der Token braucht view:space, und die Konsole muss auf Port 12445 erreichbar sein.",
-      "no_door_groups": "In Access ist noch keine Türgruppe angelegt.",
+      "policies_unavailable": "Die Richtlinien konnten nicht geladen werden. Der Token braucht view:policy, und die Konsole muss auf Port 12445 erreichbar sein.",
+      "no_policies": "In Access ist noch keine Richtlinie angelegt.",
       "missing_token": "Der API-Token fehlt.",
       "missing_host": "Die Konsolen-Adresse fehlt."
     },
@@ -44,10 +44,10 @@
       "step": {
         "user": {
           "title": "Kalender hinzufügen",
-          "description": "Einen Kalender mit einer Türgruppe verknüpfen.",
+          "description": "Einen Kalender mit einer Richtlinie verknüpfen.",
           "data": {
             "calendar": "Kalender",
-            "door_group": "Türgruppe"
+            "policy": "Richtlinie"
           }
         },
         "reconfigure": {
@@ -55,17 +55,17 @@
           "description": "Kalender: {calendar}\n\nWechselt der Kalender, legt der nächste Abgleich dessen Besucher neu an. Die Besucher des bisherigen Kalenders werden gelöscht.",
           "data": {
             "calendar": "Kalender",
-            "door_group": "Türgruppe"
+            "policy": "Richtlinie"
           }
         }
       },
       "error": {
         "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
-        "missing_door_group": "Bitte eine Türgruppe auswählen."
+        "missing_policy": "Bitte eine Richtlinie auswählen."
       },
       "abort": {
-        "door_groups_unavailable": "Die Türgruppen konnten nicht geladen werden. Unter Verbindung ändern dem Token view:space geben.",
-        "no_door_groups": "In Access ist noch keine Türgruppe angelegt.",
+        "policies_unavailable": "Die Richtlinien konnten nicht geladen werden. Unter Verbindung ändern dem Token view:policy geben.",
+        "no_policies": "In Access ist noch keine Richtlinie angelegt.",
         "reconfigure_successful": "Kalender aktualisiert."
       }
     }
