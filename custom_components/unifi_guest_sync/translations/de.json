@@ -3,31 +3,19 @@
     "step": {
       "user": {
         "title": "UniFi Access Gäste",
-        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Der Token braucht view:space, view:visitor und edit:visitor. Die Türgruppen werden im nächsten Schritt geladen.",
+        "description": "Die Access-Konsole muss auf Port 12445 erreichbar sein. Der Token braucht view:space, view:visitor und edit:visitor. Kalender werden danach unter Konfigurieren einzeln hinzugefügt.",
         "data": {
           "host": "Konsole (Host)",
           "token": "API-Token",
           "horizon_days": "Horizont in Tagen"
         }
-      },
-      "calendar": {
-        "title": "Kalender und Türgruppe",
-        "description": "Bereits hinzugefügt:\n{calendars}\n\nDen Haken entfernen, um die Einrichtung abzuschließen.",
-        "data": {
-          "calendar": "Kalender",
-          "door_group": "Türgruppe",
-          "add_another": "Weiteren Kalender hinzufügen"
-        }
       }
     },
     "error": {
-      "duplicate_calendar": "Dieser Kalender ist bereits zugeordnet.",
-      "missing_door_group": "Bitte eine Türgruppe auswählen.",
       "door_groups_unavailable": "Die Türgruppen konnten nicht geladen werden. Der Token braucht view:space, und die Konsole muss auf Port 12445 erreichbar sein.",
       "no_door_groups": "In Access ist noch keine Türgruppe angelegt.",
       "missing_token": "Der API-Token fehlt.",
-      "missing_host": "Die Konsolen-Adresse fehlt.",
-      "last_calendar": "Mindestens ein Kalender muss bleiben."
+      "missing_host": "Die Konsolen-Adresse fehlt."
     },
     "abort": {
       "single_instance_allowed": "Es ist nur eine Konfiguration nötig."
@@ -49,18 +37,17 @@
         "description": "{calendars}",
         "menu_options": {
           "add_calendar": "Kalender hinzufügen",
-          "edit_calendar": "Türgruppe ändern",
+          "edit_calendar": "Kalender bearbeiten",
           "remove_calendar": "Kalender entfernen",
           "save": "Speichern"
         }
       },
       "add_calendar": {
         "title": "Kalender hinzufügen",
-        "description": "Bereits hinzugefügt:\n{calendars}\n\nDen Haken entfernen, um zur Liste zurückzukehren.",
+        "description": "Bereits hinzugefügt:\n{calendars}\n\nHier wird ein Kalender verknüpft. Den nächsten legt man wieder über die Liste an.",
         "data": {
           "calendar": "Kalender",
-          "door_group": "Türgruppe",
-          "add_another": "Weiteren Kalender hinzufügen"
+          "door_group": "Türgruppe"
         }
       },
       "edit_calendar": {
@@ -69,10 +56,11 @@
           "calendar": "Kalender"
         }
       },
-      "edit_door_group": {
-        "title": "Türgruppe",
-        "description": "Kalender: {calendar}",
+      "edit_link": {
+        "title": "Kalender bearbeiten",
+        "description": "Kalender: {calendar}\n\nWechselt der Kalender, legt der nächste Abgleich dessen Besucher neu an. Die Besucher des bisherigen Kalenders werden gelöscht.",
         "data": {
+          "calendar": "Kalender",
           "door_group": "Türgruppe"
         }
       },

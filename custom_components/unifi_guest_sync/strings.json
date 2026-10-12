@@ -3,31 +3,19 @@
     "step": {
       "user": {
         "title": "UniFi Access guests",
-        "description": "The access console must be reachable on port 12445. The token needs view:space, view:visitor and edit:visitor. Door groups are loaded in the next step.",
+        "description": "The access console must be reachable on port 12445. The token needs view:space, view:visitor and edit:visitor. Calendars are added afterwards, one at a time, under Configure.",
         "data": {
           "host": "Console host",
           "token": "API token",
           "horizon_days": "Horizon in days"
         }
-      },
-      "calendar": {
-        "title": "Calendar and door group",
-        "description": "Already added:\n{calendars}\n\nClear the checkbox to finish setup.",
-        "data": {
-          "calendar": "Calendar",
-          "door_group": "Door group",
-          "add_another": "Add another calendar"
-        }
       }
     },
     "error": {
-      "duplicate_calendar": "This calendar is already assigned.",
-      "missing_door_group": "Select a door group.",
       "door_groups_unavailable": "Door groups could not be loaded. The token needs view:space, and the console must be reachable on port 12445.",
       "no_door_groups": "Access has no door group yet.",
       "missing_token": "The API token is required.",
-      "missing_host": "The console host is required.",
-      "last_calendar": "At least one calendar is required."
+      "missing_host": "The console host is required."
     },
     "abort": {
       "single_instance_allowed": "Only one configuration is needed."
@@ -49,18 +37,17 @@
         "description": "{calendars}",
         "menu_options": {
           "add_calendar": "Add calendar",
-          "edit_calendar": "Edit door group",
+          "edit_calendar": "Edit calendar",
           "remove_calendar": "Remove calendar",
           "save": "Save"
         }
       },
       "add_calendar": {
         "title": "Add calendar",
-        "description": "Already added:\n{calendars}\n\nClear the checkbox to return to the list.",
+        "description": "Already added:\n{calendars}\n\nThis adds one calendar. The next one is added from the list.",
         "data": {
           "calendar": "Calendar",
-          "door_group": "Door group",
-          "add_another": "Add another calendar"
+          "door_group": "Door group"
         }
       },
       "edit_calendar": {
@@ -69,10 +56,11 @@
           "calendar": "Calendar"
         }
       },
-      "edit_door_group": {
-        "title": "Door group",
-        "description": "Calendar: {calendar}",
+      "edit_link": {
+        "title": "Edit calendar",
+        "description": "Calendar: {calendar}\n\nChanging the calendar replaces its visitors on the next sync. Visitors of the previous calendar are removed.",
         "data": {
+          "calendar": "Calendar",
           "door_group": "Door group"
         }
       },

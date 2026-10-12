@@ -533,7 +533,9 @@ async def _load_state(hass: HomeAssistant, store: Store) -> dict:
 
 def settings_from_entry(entry) -> dict:
     """Konfiguration aus Ersteinrichtung und späterer Änderung zusammenführen."""
-    return {**entry.data, **entry.options}
+    settings = {**entry.data, **entry.options}
+    settings[CONF_CALENDARS] = list(settings.get(CONF_CALENDARS) or [])
+    return settings
 
 
 def _qr_directories(hass: HomeAssistant) -> tuple[Path, Path]:
@@ -695,5 +697,6 @@ async def async_sync_entry(hass: HomeAssistant, entry) -> None:
         for calendar in settings[CONF_CALENDARS]
         if calendar.get(CONF_ENTITY)
     }
-    await _remove_unconfigured(hass, client, visitors, state, configured)
+    if configured:
+        await _remove_unconfigured(hass, client, visitors, state, configured)
     await store.async_save(state)
